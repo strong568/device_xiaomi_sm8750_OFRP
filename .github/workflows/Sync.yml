@@ -1,0 +1,40 @@
+name: Sync Upstream Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      UPSTREAM_URL:
+        description: "Repository nguồn"
+        required: true
+        default: "https://github.com/AviderMin/ofrp_device_xiaomi_warsaw"
+      UPSTREAM_BRANCH:
+        description: "Nhánh nguồn cần lấy"
+        required: true
+        default: "fox_14.1"
+      TARGET_BRANCH:
+        description: "Tên nhánh mới trên repo của bạn"
+        required: true
+        default: "fork-fox_14.1"
+  # Bỏ dấu # bên dưới nếu muốn tự động đồng bộ mỗi 12 tiếng
+  # schedule:
+  #   - cron: "0 */12 * * *"
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      UPSTREAM_URL: ${{ github.event.inputs.UPSTREAM_URL || 'https://github.com/AviderMin/ofrp_device_xiaomi_warsaw' }}
+      UPSTREAM_BRANCH: ${{ github.event.inputs.UPSTREAM_BRANCH || 'fox_14.1' }}
+      TARGET_BRANCH: ${{ github.event.inputs.TARGET_BRANCH || 'fork-fox_14.1' }}
+    steps:
+      - name: Fetch and push renamed branch
+        run: |
+          git init --bare repo.git
+          cd repo.git
+          git remote add upstream "$UPSTREAM_URL"
+          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git fetch upstream "$UPSTREAM_BRANCH"
+          git push origin "FETCH_HEAD:refs/heads/$TARGET_BRANCH" --force
+          
