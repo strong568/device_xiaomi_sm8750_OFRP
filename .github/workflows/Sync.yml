@@ -22,19 +22,26 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     env:
       UPSTREAM_URL: ${{ github.event.inputs.UPSTREAM_URL || 'https://github.com/AviderMin/ofrp_device_xiaomi_warsaw' }}
       UPSTREAM_BRANCH: ${{ github.event.inputs.UPSTREAM_BRANCH || 'fox_14.1' }}
       TARGET_BRANCH: ${{ github.event.inputs.TARGET_BRANCH || 'fork-fox_14.1' }}
+      GH_PAT: ${{ secrets.GH_PAT }}
     steps:
+      - name: Validate GH_PAT
+        run: |
+          if [ -z "$GH_PAT" ]; then
+            echo "::error::Secret GH_PAT chưa được cấu hình. Vui lòng tạo Personal Access Token có quyền 'workflow' và thêm vào Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
       - name: Fetch and push renamed branch
         run: |
+          git config --global init.defaultBranch main
           git init --bare repo.git
           cd repo.git
           git remote add upstream "$UPSTREAM_URL"
-          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git remote add origin "https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.git"
           git fetch upstream "$UPSTREAM_BRANCH"
           git push origin "FETCH_HEAD:refs/heads/$TARGET_BRANCH" --force
           
